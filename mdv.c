@@ -1,8 +1,10 @@
 /***********************************************************************
-  Program atomv.c--ball representation of atoms.
-  Required files
-    atomv.h:   Include file
-    md.conf:   MD configuration file containing atomic coordinates
+Thermal Equilibration Visualization
+
+USAGE
+
+%make
+%./mdv < md.in (see mdv.h for the input-file format)
 ***********************************************************************/
 #include "mdv.h"
 #include <stdio.h>
@@ -286,7 +288,7 @@ int main(int argc, char **argv) {
   /* Specify window size */
   glutInitWindowSize(winx, winy);
   /* Open window */
-  glutCreateWindow("Lennard-Jones Atoms");
+  glutCreateWindow("Thermal Equilibration Visualization");
 
   /* Initialize view */
   initView(min_ext, max_ext);
