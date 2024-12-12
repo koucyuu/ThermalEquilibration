@@ -86,5 +86,7 @@ double potEnergy;     /* Potential energy */
 double totEnergy;     /* Total energy */
 double temperature;   /* Current temperature */
 int stepCount;        /* Current time step */
+double max_vv;        /* Max initial velocity squared */
+
 /******************************************************************************/
 

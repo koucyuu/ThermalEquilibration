@@ -118,13 +118,27 @@ void makeAtoms() {
   Makes display-list of all atoms in the current frame using spheres.
 ***********************************************************************/
   int i;
+  int k;
   float rval,gval,bval;
+  double vv;
 
   glNewList(atomsid, GL_COMPILE);
   rval = Ratom; gval = Gatom; bval = Batom;  /* RGB color of an atom */
   for (i=0; i < nAtom; i++) {
     glPushMatrix();
     glTranslatef(r[i][0],r[i][1],r[i][2]);
+
+    vv = 0.0;
+    for (k=0; k<3; k++)
+      vv = vv + rv[i][k]*rv[i][k];
+
+    /* Color atom according to its velocity */
+    rval = vv/max_vv;
+    if(rval > 1.0){
+      rval = 1.0;
+    }
+    bval = 1.0 - rval;
+
     glColor3f(rval,gval,bval);
     glCallList(sphereid);
     glPopMatrix();
@@ -160,6 +174,7 @@ void display() {
   Callback for glutDisplayFunc().  It clears the frame and depth 
   buffers and draws the atoms in the current frame.
 ***********************************************************************/
+  glClearColor(105.0/255.0, 105.0/255.0, 105.0/255.0, 1);
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   glLoadIdentity();
   drawScene();
@@ -197,9 +212,9 @@ void initView (float *min_ext, float *max_ext) {
   for (i=0; i<3; i++) center[i] = min_ext[i] + dif_ext[i]/2.0;
 
   /* set initial eye & look at location in world space */
-  eye[0] = center[0];
+  eye[0] = center[0] + dis;
   eye[1] = center[1];
-  eye[2] = center[2] + dis;
+  eye[2] = center[2];
   up[0] = 0.0;
   up[1] = 1.0;
   up[2] = 0.0;
@@ -342,6 +357,7 @@ void InitConf() {
   /* FCC atoms in the original unit cell */
   double origAtom[4][3] = {{0.0, 0.0, 0.0}, {0.0, 0.5, 0.5},
                            {0.5, 0.0, 0.5}, {0.5, 0.5, 0.0}}; 
+  double vv;
 
   /* Sets up a face-centered cubic (fcc) lattice */
   for (k=0; k<3; k++) gap[k] = Region[k]/InitUcell[k];
@@ -365,16 +381,41 @@ void InitConf() {
   seed = 13597.0;
   vMag = sqrt(3*InitTemp);
   for(k=0; k<3; k++) vSum[k] = 0.0;
-  for(n=0; n<nAtom; n++) {
+  /* Initialize half the MD box at a high velocity */
+  for(n=0; n<nAtom*0.5; n++){
     RandVec3(e,&seed);
     for (k=0; k<3; k++) {
       rv[n][k] = vMag*e[k];
+      vSum[k] = vSum[k] + rv[n][k];
+    }
+    n++;
+    /* Ensure total momentum is zero so that velocity is kept as is later on */
+    for (k=0; k<3; k++) {
+      rv[n][k] = vMag*e[k]*-1;
+      vSum[k] = vSum[k] + rv[n][k];
+    }
+  }
+  /* Initialize the other half at a low velocity */
+  for(; n<nAtom; n++) {
+    for (k=0; k<3; k++) {
+      rv[n][k] = 0;
       vSum[k] = vSum[k] + rv[n][k];
     }
   }
   /* Makes the total momentum zero */
   for (k=0; k<3; k++) vSum[k] = vSum[k]/nAtom;
   for (n=0; n<nAtom; n++) for(k=0; k<3; k++) rv[n][k] = rv[n][k] - vSum[k];
+
+  /* Keep a record of max velocity squared for later color calculations */
+  max_vv = 0.0;
+  for (n=0; n<nAtom; n++){
+    vv = 0.0;
+    for (k=0; k<3; k++)
+      vv = vv + rv[n][k]*rv[n][k];
+    if(vv > max_vv){
+      max_vv = vv;
+    }
+  }
 }
 
 /*----------------------------------------------------------------------------*/
